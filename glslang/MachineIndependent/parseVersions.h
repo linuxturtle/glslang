@@ -43,6 +43,7 @@
 #include "Scan.h"
 
 #include <map>
+#include <cstdint>
 
 namespace glslang {
 
@@ -75,6 +76,7 @@ public:
     virtual bool extensionTurnedOn(const char* const extension);
     virtual bool extensionsTurnedOn(int numExtensions, const char* const extensions[]);
     virtual void updateExtensionBehavior(int line, const char* const extension, const char* behavior);
+    virtual void updateExtensionBehaviorRaw(int line, const char* const extension, const char* behavior);
     virtual void fullIntegerCheck(const TSourceLoc&, const char* op);
     virtual void doubleCheck(const TSourceLoc&, const char* op);
 #ifdef AMD_EXTENSIONS
@@ -125,7 +127,60 @@ public:
     TIntermediate& intermediate; // helper for making and hooking up pieces of the parse tree
 
 protected:
-    TMap<TString, TExtensionBehavior> extensionBehavior;    // for each extension string, what its current behavior is set to
+    // Track for each extension string, what its current behavior is set to.
+    // Because keyword scanning needs to check this, it needs to run at high
+    // performance, and hence the frequently checked strings need to be the
+    // canonical ones from Versions.h.
+    // Only a raw string from shader source should need a slow operation to
+    // figure out what extension it is. Otherwise, the mapping is integer based,
+    // not string based.
+    class tExtensionBehaviorMap {
+    public:
+        // Translate from an unknown char* string to one of the canonical ones
+        // from Versions.h. Keep the original raw string if no mapping is found.
+        const char* mapRaw(const char* extensionString)
+        {
+            // This is expected to happen infrequenly; only when coming
+            // from shader source. Otherwise, the code should start with
+            // the canonical one from Versions.h.
+            for (auto iter = map.begin(); iter != map.end(); ++iter) {
+                // translate from integer back to canonical string to find a match
+                const char* canonical = reinterpret_cast<const char*>(iter->first);
+                if (strcmp(canonical, extensionString) == 0)
+                    return canonical;
+            }
+            return extensionString;
+        }
+        // Use only canonical strings from Versions.h.
+        // Returns writable l-value so the mapping can be set by the caller.
+        TExtensionBehavior& operator[](const char* extensionString)
+        {
+            // translate from canonical string to integer, then
+            // map to resulting behavior
+            return map[reinterpret_cast<uintptr_t>(extensionString)];
+        }
+        // Use only canonical strings from Versions.h.
+        TExtensionBehavior find(const char* extensionString)
+        {
+            // translate from canonical string to integer
+            auto iter = map.find(reinterpret_cast<uintptr_t>(extensionString));
+            if (iter == map.end())
+                return EBhMissing;
+            else
+                return iter->second;
+        }
+        // Set all current extensions' behavior to 'behavior'
+        void setAll(TExtensionBehavior behavior)
+        {
+            for (auto iter = map.begin(); iter != map.end(); ++iter)
+                iter->second = behavior;
+        }
+    protected:
+        // Use an integer-based mapped, no string manipulation.
+        TMap<uintptr_t, TExtensionBehavior> map;
+    };
+    tExtensionBehaviorMap extensionBehavior; // the actual map object to use for the above
+
     EShMessages messages;        // errors/warnings/rule-sets
     int numErrors;               // number of compile-time errors encountered
     TInputScanner* currentScanner;

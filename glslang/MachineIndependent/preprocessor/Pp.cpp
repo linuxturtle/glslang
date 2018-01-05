@@ -874,7 +874,7 @@ int TPpContext::CPPextension(TPpToken* ppToken)
         return token;
     }
 
-    parseContext.updateExtensionBehavior(line, extensionName, ppToken->name);
+    parseContext.updateExtensionBehaviorRaw(line, extensionName, ppToken->name);
     parseContext.notifyExtensionDirective(line, extensionName, ppToken->name);
 
     token = scanToken(ppToken);

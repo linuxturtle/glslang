@@ -447,6 +447,7 @@ const char* StageName(EShLanguage stage)
 //
 
 // entry point that takes multiple extensions
+// Requires canonical strings from Versions.h.
 void TParseVersions::profileRequires(const TSourceLoc& loc, int profileMask, int minVersion, int numExtensions, const char* const extensions[], const char* featureDesc)
 {
     if (profile & profileMask) {
@@ -537,6 +538,7 @@ void TParseVersions::unimplemented(const TSourceLoc& loc, const char* featureDes
 
 // Returns true if at least one of the extensions in the extensions parameter is requested. Otherwise, returns false.
 // Warns appropriately if the requested behavior of an extension is "warn".
+// Requires a canonical string from Versions.h.
 bool TParseVersions::checkExtensionsRequested(const TSourceLoc& loc, int numExtensions, const char* const extensions[], const char* featureDesc)
 {
     // First, see if any of the extensions are enabled
@@ -600,16 +602,14 @@ void TParseVersions::ppRequireExtensions(const TSourceLoc& loc, int numExtension
     }
 }
 
+// Requires a canonical string from Versions.h.
 TExtensionBehavior TParseVersions::getExtensionBehavior(const char* extension)
 {
-    auto iter = extensionBehavior.find(TString(extension));
-    if (iter == extensionBehavior.end())
-        return EBhMissing;
-    else
-        return iter->second;
+    return extensionBehavior.find(extension);
 }
 
 // Returns true if the given extension is set to enable, require, or warn.
+// Requires a canonical string from Versions.h.
 bool TParseVersions::extensionTurnedOn(const char* const extension)
 {
       switch (getExtensionBehavior(extension)) {
@@ -626,9 +626,18 @@ bool TParseVersions::extensionTurnedOn(const char* const extension)
 bool TParseVersions::extensionsTurnedOn(int numExtensions, const char* const extensions[])
 {
     for (int i = 0; i < numExtensions; ++i) {
-        if (extensionTurnedOn(extensions[i])) return true;
+        if (extensionTurnedOn(extensions[i]))
+            return true;
     }
     return false;
+}
+
+// Use when lacking a canonical extension string from Versions.h. I.e., the
+// extension name came from the shader source.
+// This will translate it to a canonical one, if possible.
+void TParseVersions::updateExtensionBehaviorRaw(int line, const char* extension, const char* behaviorString)
+{
+    updateExtensionBehavior(line, extensionBehavior.mapRaw(extension), behaviorString);
 }
 
 //
@@ -655,33 +664,33 @@ void TParseVersions::updateExtensionBehavior(int line, const char* extension, co
     updateExtensionBehavior(extension, behavior);
 
     // see if need to propagate to implicitly modified things
-    if (strcmp(extension, "GL_ANDROID_extension_pack_es31a") == 0) {
+    if (strcmp(extension, E_GL_ANDROID_extension_pack_es31a) == 0) {
         // to everything in AEP
-        updateExtensionBehavior(line, "GL_KHR_blend_equation_advanced", behaviorString);
-        updateExtensionBehavior(line, "GL_OES_sample_variables", behaviorString);
-        updateExtensionBehavior(line, "GL_OES_shader_image_atomic", behaviorString);
-        updateExtensionBehavior(line, "GL_OES_shader_multisample_interpolation", behaviorString);
-        updateExtensionBehavior(line, "GL_OES_texture_storage_multisample_2d_array", behaviorString);
-        updateExtensionBehavior(line, "GL_EXT_geometry_shader", behaviorString);
-        updateExtensionBehavior(line, "GL_EXT_gpu_shader5", behaviorString);
-        updateExtensionBehavior(line, "GL_EXT_primitive_bounding_box", behaviorString);
-        updateExtensionBehavior(line, "GL_EXT_shader_io_blocks", behaviorString);
-        updateExtensionBehavior(line, "GL_EXT_tessellation_shader", behaviorString);
-        updateExtensionBehavior(line, "GL_EXT_texture_buffer", behaviorString);
-        updateExtensionBehavior(line, "GL_EXT_texture_cube_map_array", behaviorString);
+        updateExtensionBehavior(line, E_GL_KHR_blend_equation_advanced, behaviorString);
+        updateExtensionBehavior(line, E_GL_OES_sample_variables, behaviorString);
+        updateExtensionBehavior(line, E_GL_OES_shader_image_atomic, behaviorString);
+        updateExtensionBehavior(line, E_GL_OES_shader_multisample_interpolation, behaviorString);
+        updateExtensionBehavior(line, E_GL_OES_texture_storage_multisample_2d_array, behaviorString);
+        updateExtensionBehavior(line, E_GL_EXT_geometry_shader, behaviorString);
+        updateExtensionBehavior(line, E_GL_EXT_gpu_shader5, behaviorString);
+        updateExtensionBehavior(line, E_GL_EXT_primitive_bounding_box, behaviorString);
+        updateExtensionBehavior(line, E_GL_EXT_shader_io_blocks, behaviorString);
+        updateExtensionBehavior(line, E_GL_EXT_tessellation_shader, behaviorString);
+        updateExtensionBehavior(line, E_GL_EXT_texture_buffer, behaviorString);
+        updateExtensionBehavior(line, E_GL_EXT_texture_cube_map_array, behaviorString);
     }
     // geometry to io_blocks
-    else if (strcmp(extension, "GL_EXT_geometry_shader") == 0)
-        updateExtensionBehavior(line, "GL_EXT_shader_io_blocks", behaviorString);
-    else if (strcmp(extension, "GL_OES_geometry_shader") == 0)
-        updateExtensionBehavior(line, "GL_OES_shader_io_blocks", behaviorString);
+    else if (strcmp(extension, E_GL_EXT_geometry_shader) == 0)
+        updateExtensionBehavior(line, E_GL_EXT_shader_io_blocks, behaviorString);
+    else if (strcmp(extension, E_GL_OES_geometry_shader) == 0)
+        updateExtensionBehavior(line, E_GL_OES_shader_io_blocks, behaviorString);
     // tessellation to io_blocks
-    else if (strcmp(extension, "GL_EXT_tessellation_shader") == 0)
-        updateExtensionBehavior(line, "GL_EXT_shader_io_blocks", behaviorString);
-    else if (strcmp(extension, "GL_OES_tessellation_shader") == 0)
-        updateExtensionBehavior(line, "GL_OES_shader_io_blocks", behaviorString);
-    else if (strcmp(extension, "GL_GOOGLE_include_directive") == 0)
-        updateExtensionBehavior(line, "GL_GOOGLE_cpp_style_line_directive", behaviorString);
+    else if (strcmp(extension, E_GL_EXT_tessellation_shader) == 0)
+        updateExtensionBehavior(line, E_GL_EXT_shader_io_blocks, behaviorString);
+    else if (strcmp(extension, E_GL_OES_tessellation_shader) == 0)
+        updateExtensionBehavior(line, E_GL_OES_shader_io_blocks, behaviorString);
+    else if (strcmp(extension, E_GL_GOOGLE_include_directive) == 0)
+        updateExtensionBehavior(line, E_GL_GOOGLE_cpp_style_line_directive, behaviorString);
 }
 
 void TParseVersions::updateExtensionBehavior(const char* extension, TExtensionBehavior behavior)
@@ -692,14 +701,12 @@ void TParseVersions::updateExtensionBehavior(const char* extension, TExtensionBe
         if (behavior == EBhRequire || behavior == EBhEnable) {
             error(getCurrentLoc(), "extension 'all' cannot have 'require' or 'enable' behavior", "#extension", "");
             return;
-        } else {
-            for (auto iter = extensionBehavior.begin(); iter != extensionBehavior.end(); ++iter)
-                iter->second = behavior;
-        }
+        } else
+            extensionBehavior.setAll(behavior);
     } else {
         // Do the update for this single extension
-        auto iter = extensionBehavior.find(TString(extension));
-        if (iter == extensionBehavior.end()) {
+        TExtensionBehavior currentBehavior = extensionBehavior.find(extension);
+        if (currentBehavior == EBhMissing) {
             switch (behavior) {
             case EBhRequire:
                 error(getCurrentLoc(), "extension not supported:", "#extension", extension);
@@ -715,11 +722,11 @@ void TParseVersions::updateExtensionBehavior(const char* extension, TExtensionBe
 
             return;
         } else {
-            if (iter->second == EBhDisablePartial)
+            if (currentBehavior == EBhDisablePartial)
                 warn(getCurrentLoc(), "extension is only partially supported:", "#extension", extension);
             if (behavior == EBhEnable || behavior == EBhRequire)
                 intermediate.addRequestedExtension(extension);
-            iter->second = behavior;
+            extensionBehavior[extension] = behavior;
         }
     }
 }
