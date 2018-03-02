@@ -1,0 +1,5 @@
+glslang (3.0+git2651cc-1) UNRELEASED; urgency=low
+
+  * Initial release (Closes: #741613)
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Tue, 16 Feb 2016 11:27:25 +0200
