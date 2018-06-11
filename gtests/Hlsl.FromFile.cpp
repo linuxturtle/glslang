@@ -58,6 +58,7 @@ std::string FileNameAsCustomTestSuffix(
 }
 
 using HlslCompileTest = GlslangTest<::testing::TestWithParam<FileNameEntryPointPair>>;
+using HlslVulkan1_1CompileTest = GlslangTest<::testing::TestWithParam<FileNameEntryPointPair>>;
 using HlslCompileAndFlattenTest = GlslangTest<::testing::TestWithParam<FileNameEntryPointPair>>;
 using HlslLegalizeTest = GlslangTest<::testing::TestWithParam<FileNameEntryPointPair>>;
 
@@ -66,8 +67,15 @@ using HlslLegalizeTest = GlslangTest<::testing::TestWithParam<FileNameEntryPoint
 TEST_P(HlslCompileTest, FromFile)
 {
     loadFileCompileAndCheck(GlobalTestSettings.testRoot, GetParam().fileName,
-                            Source::HLSL, Semantics::Vulkan,
-                            Target::BothASTAndSpv, GetParam().entryPoint);
+                            Source::HLSL, Semantics::Vulkan, glslang::EShTargetVulkan_1_0,
+                            Target::BothASTAndSpv, true, GetParam().entryPoint);
+}
+
+TEST_P(HlslVulkan1_1CompileTest, FromFile)
+{
+    loadFileCompileAndCheck(GlobalTestSettings.testRoot, GetParam().fileName,
+                            Source::HLSL, Semantics::Vulkan, glslang::EShTargetVulkan_1_1,
+                            Target::BothASTAndSpv, true, GetParam().entryPoint);
 }
 
 TEST_P(HlslCompileAndFlattenTest, FromFile)
@@ -82,8 +90,8 @@ TEST_P(HlslCompileAndFlattenTest, FromFile)
 TEST_P(HlslLegalizeTest, FromFile)
 {
     loadFileCompileAndCheck(GlobalTestSettings.testRoot, GetParam().fileName,
-                            Source::HLSL, Semantics::Vulkan,
-                            Target::Spv, GetParam().entryPoint,
+                            Source::HLSL, Semantics::Vulkan, glslang::EShTargetVulkan_1_0,
+                            Target::Spv, true, GetParam().entryPoint,
                             "/baseLegalResults/", false);
 }
 
@@ -189,6 +197,7 @@ INSTANTIATE_TEST_CASE_P(
         {"hlsl.hull.ctrlpt-2.tesc", "main"},
         {"hlsl.identifier.sample.frag", "main"},
         {"hlsl.if.frag", "PixelShaderFunction"},
+        {"hlsl.imagefetch-subvec4.comp", "main"},
         {"hlsl.implicitBool.frag", "main"},
         {"hlsl.inf.vert", "main"},
         {"hlsl.inoutquals.frag", "main"},
@@ -369,6 +378,22 @@ INSTANTIATE_TEST_CASE_P(
         {"hlsl.typedef.frag", "PixelShaderFunction"},
         {"hlsl.whileLoop.frag", "PixelShaderFunction"},
         {"hlsl.void.frag", "PixelShaderFunction"}
+    }),
+    FileNameAsCustomTestSuffix
+);
+// clang-format on
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    ToSpirv, HlslVulkan1_1CompileTest,
+    ::testing::ValuesIn(std::vector<FileNameEntryPointPair>{
+        {"hlsl.wavebroadcast.comp", "CSMain"},
+        {"hlsl.waveprefix.comp", "CSMain"},
+        {"hlsl.wavequad.comp", "CSMain"},
+        {"hlsl.wavequery.comp", "CSMain"},
+        {"hlsl.wavequery.frag", "PixelShaderFunction"},
+        {"hlsl.wavereduction.comp", "CSMain"},
+        {"hlsl.wavevote.comp", "CSMain"},
     }),
     FileNameAsCustomTestSuffix
 );

@@ -309,7 +309,7 @@ public:
     TFunction* handleFunctionDeclarator(const TSourceLoc&, TFunction& function, bool prototype);
     TIntermAggregate* handleFunctionDefinition(const TSourceLoc&, TFunction&);
     TIntermTyped* handleFunctionCall(const TSourceLoc&, TFunction*, TIntermNode*);
-    TIntermTyped* handleBuiltInFunctionCall(TSourceLoc, TIntermNode& arguments, const TFunction& function);
+    TIntermTyped* handleBuiltInFunctionCall(TSourceLoc, TIntermNode* arguments, const TFunction& function);
     void computeBuiltinPrecisions(TIntermTyped&, const TFunction&);
     TIntermNode* handleReturnValue(const TSourceLoc&, TIntermTyped*);
     void checkLocation(const TSourceLoc&, TOperator);
@@ -392,6 +392,7 @@ public:
     const TFunction* findFunctionExact(const TSourceLoc& loc, const TFunction& call, bool& builtIn);
     const TFunction* findFunction120(const TSourceLoc& loc, const TFunction& call, bool& builtIn);
     const TFunction* findFunction400(const TSourceLoc& loc, const TFunction& call, bool& builtIn);
+    const TFunction* findFunctionExplicitTypes(const TSourceLoc& loc, const TFunction& call, bool& builtIn);
     void declareTypeDefaults(const TSourceLoc&, const TPublicType&);
     TIntermNode* declareVariable(const TSourceLoc&, TString& identifier, const TPublicType&, TArraySizes* typeArray = 0, TIntermTyped* initializer = 0);
     TIntermTyped* addConstructor(const TSourceLoc&, TIntermNode*, const TType&);
