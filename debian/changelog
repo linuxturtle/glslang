@@ -1,5 +1,5 @@
-glslang (6.2.2596-1) UNRELEASED; urgency=low
+glslang (6.2.2596-1) unstable; urgency=low
 
   * Initial release (Closes: #741613)
 
- -- Timo Aaltonen <tjaalton@debian.org>  Tue, 16 Feb 2016 11:27:25 +0200
+ -- Timo Aaltonen <tjaalton@debian.org>  Tue, 19 Jun 2018 23:47:29 +0300
