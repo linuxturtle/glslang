@@ -47,7 +47,7 @@
 #ifndef __INTERMEDIATE_H
 #define __INTERMEDIATE_H
 
-#if _MSC_VER >= 1900
+#if defined(_MSC_VER) && _MSC_VER >= 1900
     #pragma warning(disable : 4464) // relative include path contains '..'
     #pragma warning(disable : 5026) // 'glslang::TIntermUnary': move constructor was implicitly defined as deleted
 #endif
@@ -527,6 +527,32 @@ enum TOperator {
     EOpSubgroupQuadSwapHorizontal,
     EOpSubgroupQuadSwapVertical,
     EOpSubgroupQuadSwapDiagonal,
+
+#ifdef NV_EXTENSIONS
+    EOpSubgroupPartition,
+    EOpSubgroupPartitionedAdd,
+    EOpSubgroupPartitionedMul,
+    EOpSubgroupPartitionedMin,
+    EOpSubgroupPartitionedMax,
+    EOpSubgroupPartitionedAnd,
+    EOpSubgroupPartitionedOr,
+    EOpSubgroupPartitionedXor,
+    EOpSubgroupPartitionedInclusiveAdd,
+    EOpSubgroupPartitionedInclusiveMul,
+    EOpSubgroupPartitionedInclusiveMin,
+    EOpSubgroupPartitionedInclusiveMax,
+    EOpSubgroupPartitionedInclusiveAnd,
+    EOpSubgroupPartitionedInclusiveOr,
+    EOpSubgroupPartitionedInclusiveXor,
+    EOpSubgroupPartitionedExclusiveAdd,
+    EOpSubgroupPartitionedExclusiveMul,
+    EOpSubgroupPartitionedExclusiveMin,
+    EOpSubgroupPartitionedExclusiveMax,
+    EOpSubgroupPartitionedExclusiveAnd,
+    EOpSubgroupPartitionedExclusiveOr,
+    EOpSubgroupPartitionedExclusiveXor,
+#endif
+
     EOpSubgroupGuardStop,
 
 #ifdef AMD_EXTENSIONS
@@ -703,6 +729,7 @@ enum TOperator {
     EOpConstructF16Mat4x4,
     EOpConstructStruct,
     EOpConstructTextureSampler,
+    EOpConstructNonuniform,     // expected to be transformed away, not present in final AST
     EOpConstructGuardEnd,
 
     //
@@ -729,7 +756,11 @@ enum TOperator {
     // Array operators
     //
 
-    EOpArrayLength,      // "Array" distinguishes from length(v) built-in function, but it applies to vectors and matrices as well.
+    // Can apply to arrays, vectors, or matrices.
+    // Can be decomposed to a constant at compile time, but this does not always happen,
+    // due to link-time effects. So, consumer can expect either a link-time sized or
+    // run-time sized array.
+    EOpArrayLength,
 
     //
     // Image operations
@@ -1133,6 +1164,7 @@ public:
         constSubtree(nullptr)
           { name = n; }
     virtual int getId() const { return id; }
+    virtual void changeId(int i) { id = i; }
     virtual const TString& getName() const { return name; }
     virtual void traverse(TIntermTraverser*);
     virtual       TIntermSymbol* getAsSymbolNode()       { return this; }

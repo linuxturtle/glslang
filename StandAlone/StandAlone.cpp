@@ -101,6 +101,8 @@ enum TOptions {
     EOptionInvertY              = (1 << 30),
     EOptionDumpBareVersion      = (1 << 31),
 };
+bool targetHlslFunctionality1 = false;
+bool SpvToolsDisassembler = false;
 
 //
 // Return codes from main/exit().
@@ -156,11 +158,12 @@ const char* entryPointName = nullptr;
 const char* sourceEntryPointName = nullptr;
 const char* shaderStageName = nullptr;
 const char* variableName = nullptr;
+bool HlslEnable16BitTypes = false;
 std::vector<std::string> IncludeDirectoryList;
 int ClientInputSemanticsVersion = 100;                  // maps to, say, #define VULKAN 100
-glslang::EshTargetClientVersion VulkanClientVersion =
+glslang::EShTargetClientVersion VulkanClientVersion =
                           glslang::EShTargetVulkan_1_0; // would map to, say, Vulkan 1.0
-glslang::EshTargetClientVersion OpenGLClientVersion =
+glslang::EShTargetClientVersion OpenGLClientVersion =
                           glslang::EShTargetOpenGL_450; // doesn't influence anything yet, but maps to OpenGL 4.50
 glslang::EShTargetLanguageVersion TargetVersion =
                           glslang::EShTargetSpv_1_0;    // maps to, say, SPIR-V 1.0
@@ -443,6 +446,11 @@ void ProcessArguments(std::vector<std::unique_ptr<glslang::TWorkItem>>& workItem
                                 Error("--client expects vulkan100 or opengl100");
                         }
                         bumpArg();
+                    } else if (lowerword == "entry-point") {
+                        entryPointName = argv[1];
+                        if (argc <= 1)
+                            Error("no <name> provided for --entry-point");
+                        bumpArg();
                     } else if (lowerword == "flatten-uniform-arrays" || // synonyms
                                lowerword == "flatten-uniform-array"  ||
                                lowerword == "fua") {
@@ -453,6 +461,8 @@ void ProcessArguments(std::vector<std::unique_ptr<glslang::TWorkItem>>& workItem
                                lowerword == "hlsl-iomapper" ||
                                lowerword == "hlsl-iomapping") {
                         Options |= EOptionHlslIoMapping;
+                    } else if (lowerword == "hlsl-enable-16bit-types") {
+                        HlslEnable16BitTypes = true;
                     } else if (lowerword == "invert-y" ||  // synonyms
                                lowerword == "iy") {
                         Options |= EOptionInvertY;
@@ -502,6 +512,8 @@ void ProcessArguments(std::vector<std::unique_ptr<glslang::TWorkItem>>& workItem
                         sourceEntryPointName = argv[1];
                         bumpArg();
                         break;
+                    } else if (lowerword == "spirv-dis") {
+                        SpvToolsDisassembler = true;
                     } else if (lowerword == "stdin") {
                         Options |= EOptionStdin;
                         shaderStageName = argv[1];
@@ -520,7 +532,7 @@ void ProcessArguments(std::vector<std::unique_ptr<glslang::TWorkItem>>& workItem
                                 setOpenGlSpv();
                                 OpenGLClientVersion = glslang::EShTargetOpenGL_450;
                             } else
-                                Error("--target-env expected vulkan1.0 or opengl");
+                                Error("--target-env expected vulkan1.0, vulkan1.1, or opengl");
                         }
                         bumpArg();
                     } else if (lowerword == "variable-name" || // synonyms
@@ -570,7 +582,7 @@ void ProcessArguments(std::vector<std::unique_ptr<glslang::TWorkItem>>& workItem
                 if (argv[0][2] == 'd')
                     Options |= EOptionOptimizeDisable;
                 else if (argv[0][2] == 's')
-#ifdef ENABLE_OPT
+#if ENABLE_OPT
                     Options |= EOptionOptimizeSize;
 #else
                     Error("-Os not available; optimizer not linked");
@@ -603,12 +615,16 @@ void ProcessArguments(std::vector<std::unique_ptr<glslang::TWorkItem>>& workItem
                     Options |= EOptionDefaultDesktop;
                 break;
             case 'e':
-                // HLSL todo: entry point handle needs much more sophistication.
-                // This is okay for one compilation unit with one entry point.
                 entryPointName = argv[1];
                 if (argc <= 1)
                     Error("no <name> provided for -e");
                 bumpArg();
+                break;
+            case 'f':
+                if (strcmp(&argv[0][2], "hlsl_functionality1") == 0)
+                    targetHlslFunctionality1 = true;
+                else
+                    Error("-f: expected hlsl_functionality1");
                 break;
             case 'g':
                 Options |= EOptionDebug;
@@ -708,6 +724,10 @@ void SetMessageOptions(EShMessages& messages)
         messages = (EShMessages)(messages | EShMsgHlslOffsets);
     if (Options & EOptionDebug)
         messages = (EShMessages)(messages | EShMsgDebugInfo);
+    if (HlslEnable16BitTypes)
+        messages = (EShMessages)(messages | EShMsgHlslEnable16BitTypes);
+    if ((Options & EOptionOptimizeDisable) || !ENABLE_OPT)
+        messages = (EShMessages)(messages | EShMsgHlslLegalization);
 }
 
 //
@@ -715,19 +735,23 @@ void SetMessageOptions(EShMessages& messages)
 //
 void CompileShaders(glslang::TWorklist& worklist)
 {
+    if (Options & EOptionDebug)
+        Error("cannot generate debug information unless linking to generate code");
+
     glslang::TWorkItem* workItem;
     if (Options & EOptionStdin) {
-        worklist.remove(workItem);
-        ShHandle compiler = ShConstructCompiler(FindLanguage("stdin"), Options);
-        if (compiler == 0)
-            return;
+        if (worklist.remove(workItem)) {
+            ShHandle compiler = ShConstructCompiler(FindLanguage("stdin"), Options);
+            if (compiler == nullptr)
+                return;
 
-        CompileFile("stdin", compiler);
+            CompileFile("stdin", compiler);
 
             if (! (Options & EOptionSuppressInfolog))
                 workItem->results = ShGetInfoLog(compiler);
 
-        ShDestruct(compiler);
+            ShDestruct(compiler);
+        }
     } else {
         while (worklist.remove(workItem)) {
             ShHandle compiler = ShConstructCompiler(FindLanguage(workItem->name), Options);
@@ -819,7 +843,7 @@ void CompileAndLinkShaderUnits(std::vector<ShaderCompUnit> compUnits)
         const auto &compUnit = *it;
         glslang::TShader* shader = new glslang::TShader(compUnit.stage);
         shader->setStringsWithLengthsAndNames(compUnit.text, NULL, compUnit.fileNameList, compUnit.count);
-        if (entryPointName) // HLSL todo: this needs to be tracked per compUnits
+        if (entryPointName)
             shader->setEntryPoint(entryPointName);
         if (sourceEntryPointName) {
             if (entryPointName == nullptr)
@@ -869,14 +893,15 @@ void CompileAndLinkShaderUnits(std::vector<ShaderCompUnit> compUnits)
                                                                 : glslang::EShSourceGlsl,
                                         compUnit.stage, glslang::EShClientVulkan, ClientInputSemanticsVersion);
                 shader->setEnvClient(glslang::EShClientVulkan, VulkanClientVersion);
-                shader->setEnvTarget(glslang::EShTargetSpv, TargetVersion);
             } else {
                 shader->setEnvInput((Options & EOptionReadHlsl) ? glslang::EShSourceHlsl
                                                                 : glslang::EShSourceGlsl,
                                         compUnit.stage, glslang::EShClientOpenGL, ClientInputSemanticsVersion);
                 shader->setEnvClient(glslang::EShClientOpenGL, OpenGLClientVersion);
-                shader->setEnvTarget(glslang::EshTargetSpv, TargetVersion);
             }
+            shader->setEnvTarget(glslang::EShTargetSpv, TargetVersion);
+            if (targetHlslFunctionality1)
+                shader->setEnvTargetHlslFunctionality1();
         }
 
         shaders.push_back(shader);
@@ -964,9 +989,15 @@ void CompileAndLinkShaderUnits(std::vector<ShaderCompUnit> compUnits)
                         } else {
                             glslang::OutputSpvBin(spirv, GetBinaryName((EShLanguage)stage));
                         }
-                        if (Options & EOptionHumanReadableSpv) {
+#if ENABLE_OPT
+                        if (SpvToolsDisassembler)
+                            spv::SpirvToolsDisassemble(std::cout, spirv);
+#else
+                        if (SpvToolsDisassembler)
+                            printf("SPIRV-Tools is not enabled; use -H for human readable SPIR-V\n");
+#endif
+                        if (!SpvToolsDisassembler && (Options & EOptionHumanReadableSpv))
                             spv::Disassemble(std::cout, spirv);
-                        }
                     }
                 }
             }
@@ -1178,38 +1209,48 @@ int C_DECL main(int argc, char* argv[])
 //   .frag = fragment
 //   .comp = compute
 //
-EShLanguage FindLanguage(const std::string& name, bool parseSuffix)
+//   Additionally, the file names may end in .<stage>.glsl and .<stage>.hlsl
+//   where <stage> is one of the stages listed above.
+//
+EShLanguage FindLanguage(const std::string& name, bool parseStageName)
 {
-    size_t ext = 0;
-    std::string suffix;
-
+    std::string stageName;
     if (shaderStageName)
-        suffix = shaderStageName;
-    else {
-        // Search for a suffix on a filename: e.g, "myfile.frag".  If given
-        // the suffix directly, we skip looking for the '.'
-        if (parseSuffix) {
-            ext = name.rfind('.');
-            if (ext == std::string::npos) {
-                usage();
-                return EShLangVertex;
-            }
-            ++ext;
+        stageName = shaderStageName;
+    else if (parseStageName) {
+        // Note: "first" extension means "first from the end", i.e.
+        // if the file is named foo.vert.glsl, then "glsl" is first,
+        // "vert" is second.
+        size_t firstExtStart = name.find_last_of(".");
+        bool hasFirstExt = firstExtStart != std::string::npos;
+        size_t secondExtStart = hasFirstExt ? name.find_last_of(".", firstExtStart - 1) : std::string::npos;
+        bool hasSecondExt = secondExtStart != std::string::npos;
+        std::string firstExt = name.substr(firstExtStart + 1, std::string::npos);
+        bool usesUnifiedExt = hasFirstExt && (firstExt == "glsl" || firstExt == "hlsl");
+        if (usesUnifiedExt && firstExt == "hlsl")
+            Options |= EOptionReadHlsl;
+        if (hasFirstExt && !usesUnifiedExt)
+            stageName = firstExt;
+        else if (usesUnifiedExt && hasSecondExt)
+            stageName = name.substr(secondExtStart + 1, firstExtStart - secondExtStart - 1);
+        else {
+            usage();
+            return EShLangVertex;
         }
-        suffix = name.substr(ext, std::string::npos);
-    }
+    } else
+        stageName = name;
 
-    if (suffix == "vert")
+    if (stageName == "vert")
         return EShLangVertex;
-    else if (suffix == "tesc")
+    else if (stageName == "tesc")
         return EShLangTessControl;
-    else if (suffix == "tese")
+    else if (stageName == "tese")
         return EShLangTessEvaluation;
-    else if (suffix == "geom")
+    else if (stageName == "geom")
         return EShLangGeometry;
-    else if (suffix == "frag")
+    else if (stageName == "frag")
         return EShLangFragment;
-    else if (suffix == "comp")
+    else if (stageName == "comp")
         return EShLangCompute;
 
     usage();
@@ -1280,10 +1321,12 @@ void usage()
            "    .geom   for a geometry shader\n"
            "    .frag   for a fragment shader\n"
            "    .comp   for a compute shader\n"
+           "    .glsl   for .vert.glsl, .tesc.glsl, ..., .comp.glsl compound suffixes\n"
+           "    .hlsl   for .vert.hlsl, .tesc.hlsl, ..., .comp.hlsl compound suffixes\n"
            "\n"
            "Options:\n"
            "  -C          cascading errors; risk crash from accumulation of error recoveries\n"
-           "  -D          input is HLSL\n"
+           "  -D          input is HLSL (default when any suffix is .hlsl)\n"
            "  -D<macro=def>\n"
            "  -D<macro>   define a pre-processor macro\n"
            "  -E          print pre-processed GLSL; cannot be used with -l;\n"
@@ -1312,7 +1355,11 @@ void usage()
            "              creates the default configuration file (redirect to a .conf file)\n"
            "  -d          default to desktop (#version 110) when there is no shader #version\n"
            "              (default is ES version 100)\n"
-           "  -e <name>   specify <name> as the entry-point name\n"
+           "  --entry-point <name>\n"
+           "  -e <name>   specify <name> as the entry-point function name\n"
+           "  -f{hlsl_functionality1}\n"
+           "              'hlsl_functionality1' enables use of the\n"
+           "                  SPV_GOOGLE_hlsl_functionality1 extension\n"
            "  -g          generate debug information\n"
            "  -h          print this usage message\n"
            "  -i          intermediate tree (glslang AST) is printed out\n"
@@ -1341,6 +1388,7 @@ void usage()
            "  --hlsl-offsets                       Allow block offsets to follow HLSL rules\n"
            "                                       Works independently of source language\n"
            "  --hlsl-iomap                         Perform IO mapping in HLSL register space\n"
+           "  --hlsl-enable-16bit-types            Allow use of 16-bit types in SPIR-V for HLSL\n"
            "  --invert-y | --iy                    invert position.Y output in vertex shader\n"
            "  --keep-uncalled                      don't eliminate uncalled functions\n"
            "  --ku                                 synonym for --keep-uncalled\n"
@@ -1371,6 +1419,8 @@ void usage()
            "  --shift-UBO-binding [stage] [num set]... per-descriptor-set shift values\n"
            "  --shift-cbuffer-binding [stage] num  synonym for --shift-UBO-binding\n"
            "  --shift-cbuffer-binding [stage] [num set]... per-descriptor-set shift values\n"
+           "  --spirv-dis                          output standard form disassembly; works only\n"
+           "                                       when a SPIR-V generation option is also used\n"
            "  --sub [stage] num                    synonym for --shift-UBO-binding\n"
            "  --source-entrypoint <name>           the given shader source function is\n"
            "                                       renamed to be the <name> given in -e\n"
@@ -1384,8 +1434,8 @@ void usage()
            "                                       set execution environment that emitted code\n"
            "                                       will execute in (as opposed to the language\n"
            "                                       semantics selected by --client) defaults:\n"
-           "                                        'vulkan1.0' under '--client vulkan<ver>'\n"
-           "                                        'opengl' under '--client opengl<ver>'\n"
+           "                                          'vulkan1.0' under '--client vulkan<ver>'\n"
+           "                                          'opengl' under '--client opengl<ver>'\n"
            "  --variable-name <name>               Creates a C header file that contains a\n"
            "                                       uint32_t array named <name>\n"
            "                                       initialized with the shader binary code.\n"
