@@ -1,9 +1,11 @@
-glslang (7.8.2850-1) UNRELEASED; urgency=medium
+glslang (7.8.2853-1) UNRELEASED; urgency=medium
 
   [ Jordan Justen ]
-  * UNRELEASED
+  * d/gbp.conf: Add configuration file for gbp (git buildpackage)
+  * d/watch: Add watch file
+  * d/control: Add Timo as uploader for lintian no-human-maintainers
 
- -- Jordan Justen <jljusten@gmail.com>  Fri, 10 Aug 2018 13:18:07 -0700
+ -- Jordan Justen <jljusten@gmail.com>  Tue, 14 Aug 2018 01:50:19 -0700
 
 glslang (6.2.2596-1) unstable; urgency=low
 
