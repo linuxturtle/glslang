@@ -4,8 +4,9 @@ glslang (7.8.2853-1) UNRELEASED; urgency=medium
   * d/gbp.conf: Add configuration file for gbp (git buildpackage)
   * d/watch: Add watch file
   * d/control: Add Timo as uploader for lintian no-human-maintainers
+  * d/watch: Add signing key to watch file
 
- -- Jordan Justen <jljusten@gmail.com>  Tue, 14 Aug 2018 01:50:19 -0700
+ -- Jordan Justen <jljusten@gmail.com>  Tue, 14 Aug 2018 02:10:52 -0700
 
 glslang (6.2.2596-1) unstable; urgency=low
 
