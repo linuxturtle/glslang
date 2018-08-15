@@ -1,4 +1,4 @@
-glslang (7.8.2853-1) UNRELEASED; urgency=medium
+glslang (7.8.2853-1) unstable; urgency=medium
 
   [ Jordan Justen ]
   * d/gbp.conf: Add configuration file for gbp (git buildpackage)
@@ -6,7 +6,7 @@ glslang (7.8.2853-1) UNRELEASED; urgency=medium
   * d/control: Add Timo as uploader for lintian no-human-maintainers
   * d/watch: Add signing key to watch file
 
- -- Jordan Justen <jljusten@gmail.com>  Tue, 14 Aug 2018 02:10:52 -0700
+ -- Timo Aaltonen <tjaalton@debian.org>  Wed, 15 Aug 2018 20:56:17 +0300
 
 glslang (6.2.2596-1) unstable; urgency=low
 
