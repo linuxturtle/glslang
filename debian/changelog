@@ -1,9 +1,15 @@
 glslang (7.8.2853-2) UNRELEASED; urgency=medium
 
   [ Jordan Justen ]
-  * UNRELEASED
+  * d/copyright: Add ARM under BSD-3-clause. Closes: #905326
+  * d/copyright: Add NVIDIA AML license. Closes: #905326
+  * d/copyright: Add Glslang Authors Apache License. Closes: #905326
+  * d/control: Update Standards-Version to 4.2.0
+  * d/control: Update debhelper to 11
+  * d/copyright: Fix lintian wildcard-matches-nothing-in-dep5-copyright
+  * d/lintian: Add glslang-tools lintian override for binary-without-manpage
 
- -- Jordan Justen <jordan.l.justen@intel.com>  Fri, 17 Aug 2018 17:14:02 -0700
+ -- Jordan Justen <jordan.l.justen@intel.com>  Fri, 17 Aug 2018 18:06:37 -0700
 
 glslang (7.8.2853-1) unstable; urgency=medium
 
