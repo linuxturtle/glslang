@@ -3,7 +3,7 @@ Section: libdevel
 Priority: optional
 Maintainer: Debian X Strike Force <debian-x@lists.debian.org>
 Uploaders: Timo Aaltonen <tjaalton@debian.org>
-Build-Depends: debhelper (>= 10),
+Build-Depends: debhelper (>= 11),
  cmake,
  spirv-headers,
 Standards-Version: 4.2.0
