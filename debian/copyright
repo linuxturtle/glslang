@@ -17,8 +17,7 @@ Files: glslang/MachineIndependent/gl_types.h
 Copyright: 2013-2016 The Khronos Group Inc
 License: MIT
 
-Files: tools/data*
-       glslang/MachineIndependent/glslang_tab.cpp
+Files: glslang/MachineIndependent/glslang_tab.cpp
        glslang/MachineIndependent/glslang_tab.cpp.h
 Copyright: 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc
 License: GPL-3
