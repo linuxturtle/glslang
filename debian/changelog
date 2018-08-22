@@ -1,4 +1,4 @@
-glslang (7.8.2853-2) UNRELEASED; urgency=medium
+glslang (7.8.2853-2) unstable; urgency=medium
 
   [ Jordan Justen ]
   * d/copyright: Add ARM under BSD-3-clause. Closes: #905326
@@ -10,7 +10,7 @@ glslang (7.8.2853-2) UNRELEASED; urgency=medium
   * d/lintian: Add glslang-tools lintian override for binary-without-manpage
   * d/control: Fix Vcs-Git and Vcs-Browser urls
 
- -- Jordan Justen <jordan.l.justen@intel.com>  Wed, 22 Aug 2018 13:12:23 -0700
+ -- Timo Aaltonen <tjaalton@debian.org>  Wed, 22 Aug 2018 23:25:24 +0300
 
 glslang (7.8.2853-1) unstable; urgency=medium
 
