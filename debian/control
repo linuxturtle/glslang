@@ -8,8 +8,8 @@ Build-Depends: debhelper (>= 11),
  spirv-headers,
 Standards-Version: 4.2.0
 Homepage: https://github.com/KhronosGroup/glslang
-Vcs-Git: https://salsa.debian.org/git/xorg-team/vulkan/glslang.git
-Vcs-Browser: https://salsa.debian.org/git/xorg-team/vulkan/glslang.git
+Vcs-Git: https://salsa.debian.org/xorg-team/vulkan/glslang.git
+Vcs-Browser: https://salsa.debian.org/xorg-team/vulkan/glslang
 
 Package: glslang-tools
 Architecture: any
