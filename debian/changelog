@@ -10,6 +10,9 @@ glslang (7.8.2853-2) unstable; urgency=medium
   * d/lintian: Add glslang-tools lintian override for binary-without-manpage
   * d/control: Fix Vcs-Git and Vcs-Browser urls
 
+  [ Brett Johnson ]
+  * Add man pages for spirv-remap and glslangValidator
+
  -- Timo Aaltonen <tjaalton@debian.org>  Wed, 22 Aug 2018 23:25:24 +0300
 
 glslang (7.8.2853-1) unstable; urgency=medium
