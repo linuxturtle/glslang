@@ -1,0 +1,6 @@
+version=4
+
+opts=\
+pgpsigurlmangle=s/(.+)\/archive\/(\S+)\.tar\.gz/$1\/releases\/download\/$2\/glslang-$2.tar.gz.asc/, \
+https://github.com/KhronosGroup/glslang/tags \
+.*/v?(\d\S*)\.tar\.gz
