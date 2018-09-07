@@ -1,4 +1,4 @@
-glslang (7.8.2853-1) UNRELEASED; urgency=medium
+glslang (7.8.2853-2) unstable; urgency=medium
 
   [ Jordan Justen ]
   * d/copyright: Add ARM under BSD-3-clause. Closes: #905326
