@@ -1,4 +1,10 @@
-glslang (7.8.2853-2) UNRELEASED; urgency=medium
+glslang (7.9.2888+30-1) UNRELEASED; urgency=medium
+
+  * New upstream release, plus needed bugfixes
+
+ -- Brett Johnson <brett@linuxturtle.net>  Fri, 28 Sep 2018 15:19:23 -0600
+
+glslang (7.8.2853-2) unstable; urgency=medium
 
   [ Jordan Justen ]
   * d/copyright: Add ARM under BSD-3-clause. Closes: #905326
@@ -13,7 +19,7 @@ glslang (7.8.2853-2) UNRELEASED; urgency=medium
   [ Brett Johnson ]
   * Add man pages for spirv-remap and glslangValidator
 
- -- Brett Johnson <brett@linuxturtle.net>  Fri, 07 Sep 2018 15:13:31 -0600
+ -- Brett Johnson <brett@linuxturtle.net>  Fri, 28 Sep 2018 15:19:23 -0600
 
 glslang (7.8.2853-1) unstable; urgency=medium
 
